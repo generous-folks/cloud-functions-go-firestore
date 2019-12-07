@@ -35,7 +35,7 @@ type DeleteType struct {
 func ArticleAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
-	conf := &firebase.Config{ProjectID: "gofire-1280e"}
+	conf := &firebase.Config{ProjectID: "***YOUR-PROJECT-ID***"}
 
 	app, err := firebase.NewApp(ctx, conf)
 	if err != nil {
