@@ -39,11 +39,15 @@ func ArticleAPI(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, conf)
 	if err != nil {
-		log.Fatalf("error initializing app: %v\n", err)
+		log.Printf("error initializing app: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		log.Fatalf("Firestore init: %v", err)
+		log.Printf("Firestore init: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	defer client.Close()
 
@@ -75,7 +79,6 @@ func ArticleAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func getArticles(ctx context.Context, client *firestore.Client, w http.ResponseWriter) {
-
 	var articles ArticlesType
 	iter := client.Collection("articles").Documents(ctx)
 	for {
@@ -84,7 +87,9 @@ func getArticles(ctx context.Context, client *firestore.Client, w http.ResponseW
 			break
 		}
 		if err != nil {
-			// handle error
+			log.Printf("Iteration over documents failed %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		articles = append(articles, doc.Data())
@@ -104,20 +109,26 @@ func setArticle(ctx context.Context, client *firestore.Client, w http.ResponseWr
 
 	err = json.Unmarshal(body, &newArticle)
 	if err != nil {
-		panic(err)
+		log.Printf("Unmarshalling json failed %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	_, err = client.Collection("articles").Doc(newArticle.ID).Create(ctx, &newArticle)
 	if err != nil {
-		panic(err)
+		log.Printf("Collection update failed %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]bool{"create": true})
+	w.WriteHeader(http.StatusCreated)
 }
 
 func deleteArticle(ctx context.Context, client *firestore.Client, w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Reading request body failed %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	defer r.Body.Close()
 
@@ -125,21 +136,27 @@ func deleteArticle(ctx context.Context, client *firestore.Client, w http.Respons
 
 	err = json.Unmarshal(body, &Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Unmarshalling json failed %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	_, err = client.Collection("articles").Doc(Body.ID).Delete(ctx)
 	if err != nil {
-		panic(err)
+		log.Printf("Document deletion failed %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]bool{"delete": true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func updateArticle(ctx context.Context, client *firestore.Client, w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Reading request body failed %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	defer r.Body.Close()
 
@@ -147,13 +164,17 @@ func updateArticle(ctx context.Context, client *firestore.Client, w http.Respons
 
 	err = json.Unmarshal(body, &Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Unmarshalling json failed %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	_, err = client.Collection("articles").Doc(Body.ID).Set(ctx, &Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Document update failed %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]bool{"update": true})
+	w.WriteHeader(http.StatusOK)
 }
