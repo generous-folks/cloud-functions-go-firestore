@@ -24,9 +24,10 @@ type ArticleFieldsType struct {
 	Year        string  `firestore:"year"`
 	Image       string  `firestore:"image"`
 	Description string  `firestore:"description"`
+	Slug        string  `firestore:"slug"`
 }
 
-// DeleteType represents the body expected structure
+// DeleteType represents the body expected structure of a delete http call
 type DeleteType struct {
 	ID string `json:"id"`
 }
